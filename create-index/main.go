@@ -4,15 +4,16 @@ import (
 	"crypto/tls"
 	"fmt"
 	"net/http"
+	"os"
 
 	opensearch "github.com/opensearch-project/opensearch-go/v2"
 )
 
 func main() {
-	endpoint := "https://localhost:9200"
-    username := "admin" // Leave empty if not using authentication
-    password := "admin" // Leave empty if not using authentication
-
+	endpoint := os.Getenv("OPENSEARCH_ENDPOINT")
+	username := os.Getenv("OPENSEARCH_USER_NAME")
+	password := os.Getenv("OPENSEARCH_PASSWORD")
+	
 	// Create a client
 	client, err := opensearch.NewClient(opensearch.Config{
 		Addresses: []string{endpoint},
