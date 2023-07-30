@@ -2,10 +2,11 @@ package main
 
 import (
 	"crypto/tls"
+	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 
-	"github.com/opensearch-project/opensearch-go/opensearchutil"
 	opensearch "github.com/opensearch-project/opensearch-go/v2"
 )
 
@@ -13,7 +14,6 @@ func main() {
 	endpoint := "https://localhost:9200"
     username := "admin" // Leave empty if not using authentication
     password := "admin" // Leave empty if not using authentication
-
 
 	// Create a client
 	client, err := opensearch.NewClient(opensearch.Config{
@@ -31,24 +31,35 @@ func main() {
 		return
 	}
 
-	// Index a document
+	// Retrieve a document
 	indexName := "dev-article"
 	documentID := "1"
-	document := map[string]interface{}{
-		"title":   "Getting Started with OpenSearch",
-		"content": "OpenSearch is a powerful open-source search and analytics engine...",
-	}
-	err = indexDocument(client, indexName, documentID, document)
+	retrievedDocument, err := getDocument(client, indexName, documentID)
 	if err != nil {
-		fmt.Println("Error indexing document:", err)
+		fmt.Println("Error retrieving document:", err)
 		return
 	}
-	fmt.Println("Document indexed:", documentID)
+	fmt.Println("Retrieved Document:", retrievedDocument)
 }
 
-func indexDocument(client *opensearch.Client, indexName string, documentID string, document map[string]interface{}) error {
+func getDocument(client *opensearch.Client, indexName string, documentID string) (interface{}, error) {
 
-	_, err := client.Create(indexName, documentID, opensearchutil.NewJSONReader(document))
+	response, err := client.Get(indexName, documentID)
+	if err != nil {
+		return nil, err
+	}
+	defer response.Body.Close()
 
-	return err
+	data := make(map[string]interface{})
+
+	resp, errResp := io.ReadAll(response.Body)
+	if errResp != nil {
+		return nil, errResp
+	}
+	err = json.Unmarshal(resp, &data)
+	if err != nil {
+		return nil, err
+	}
+
+	return data, nil
 }
